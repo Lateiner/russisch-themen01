@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch: Steckbrief-Check (Fix)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --next-color: #e67e22;
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--primary-color);
+        }
+
+        h1 { font-size: 1.5rem; text-align: center; margin-bottom: 5px; }
+        .instructions { color: #666; text-align: center; margin-bottom: 25px; max-width: 500px; }
+
+        /* Steckbrief */
+        .profile-card {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 400px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 25px;
+            border: 1px solid #ddd;
+            min-height: 200px;
+        }
+
+        .profile-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .profile-content {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 10px 20px;
+        }
+
+        .label { color: #7f8c8d; font-weight: bold; }
+        .value { color: var(--primary-color); font-weight: 500; }
+
+        /* Audio & Buttons */
+        .action-area { text-align: center; width: 100%; max-width: 400px; }
+
+        .play-btn {
+            background: var(--accent-color);
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-bottom: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .play-btn svg { fill: white; width: 30px; height: 30px; }
+
+        .choice-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .choice-btn {
+            font-size: 2rem;
+            padding: 15px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .choice-btn:disabled { opacity: 0.5; cursor: default; }
+        .btn-correct { background-color: #ccffcc !important; border-color: var(--success-color) !important; }
+        .btn-wrong { background-color: #fdedec !important; border-color: var(--error-color) !important; }
+
+        #next-btn {
+            background-color: var(--next-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+            display: none;
+            margin: 0 auto;
+        }
+
+        .progress-bar {
+            width: 100%;
+            max-width: 400px;
+            height: 6px;
+            background: #ddd;
+            border-radius: 3px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--success-color);
+            width: 0%;
+            transition: width 0.4s;
+        }
+
+        #feedback-text { font-weight: bold; margin-bottom: 15px; min-height: 24px; }
+        
+        .btn-restart { 
+            margin-top: 30px; 
+            padding: 10px 20px;
+            background: #95a5a6; 
+            border: none; 
+            color: white; 
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer; 
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <h1>Thema 1: Steckbrief-Check</h1>
+    <p class="instructions">Hör dir die Aussage an (männliche Stimme). Stimmt sie mit dem Steckbrief überein?</p>
+
+    <div class="progress-bar"><div id="progress-fill"></div></div>
+
+    <!-- Steckbrief Container -->
+    <div class="profile-card" id="profileCard">
+        <div id="profile-inner">
+            <div class="profile-header">АНКЕТА (Profil)</div>
+            <div class="profile-content">
+                <div class="label">Имя:</div><div class="value" id="val-name">-</div>
+                <div class="label">Возраст:</div><div class="value" id="val-age">-</div>
+                <div class="label">Город:</div><div class="value" id="val-city">-</div>
+                <div class="label">Работа:</div><div class="value" id="val-job">-</div>
+            </div>
+        </div>
+        <div id="finish-message" class="hidden" style="padding: 40px; text-align: center;">
+            🎉 <b>Hervorragend!</b><br>Alle Aufgaben wurden bearbeitet.
+        </div>
+    </div>
+
+    <div class="action-area" id="actionArea">
+        <button class="play-btn" onclick="playAudio()" title="Anhören">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <div id="feedback-text">Anhören und entscheiden...</div>
+        
+        <div class="choice-container" id="choices">
+            <button class="choice-btn" id="btn-true" onclick="handleChoice(true)">✅</button>
+            <button class="choice-btn" id="btn-false" onclick="handleChoice(false)">❌</button>
+        </div>
+
+        <button id="next-btn" onclick="nextQuestion()">Nächster Satz ➔</button>
+    </div>
+
+    <button class="btn-restart" onclick="initGame()">Spiel neu starten</button>
+
+    <script>
+        const quizData = [
+            { profile: { name: 'Иван', age: '30', city: 'Москва', job: 'Врач' }, audio: 'Меня зовут Иван.', correct: true },
+            { profile: { name: 'Максим', age: '25', city: 'Ейск', job: 'Учитель' }, audio: 'Мне сорок лет.', correct: false },
+            { profile: { name: 'Пётр', age: '42', city: 'Берлин', job: 'Инженер' }, audio: 'Я живу в Берлине.', correct: true },
+            { profile: { name: 'Антон', age: '19', city: 'Прага', job: 'Студент' }, audio: 'Я работаю врачом.', correct: false },
+            { profile: { name: 'Игорь', age: '35', city: 'Лондон', job: 'Менеджер' }, audio: 'Меня зовут Игорь.', correct: true },
+            { profile: { name: 'Дмитрий', age: '28', city: 'Париж', job: 'Повар' }, audio: 'Я живу в Москве.', correct: false },
+            { profile: { name: 'Алексей', age: '50', city: 'Вена', job: 'Директор' }, audio: 'Мне пятьдесят лет.', correct: true },
+            { profile: { name: 'Виктор', age: '31', city: 'Рим', job: 'Гид' }, audio: 'Меня зовут Александр.', correct: false },
+            { profile: { name: 'Сергей', age: '22', city: 'Мадрид', job: 'Дизайнер' }, audio: 'Я работаю дизайнером.', correct: true },
+            { profile: { name: 'Николай', age: '45', city: 'Токио', job: 'Пилот' }, audio: 'Я живу в Токио.', correct: true }
+        ];
+
+        let currentIndex = 0;
+        let canClick = true;
+        let maleVoice = null;
+
+        function loadVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            // Suche russische männliche Stimme
+            maleVoice = voices.find(v => v.lang.startsWith('ru') && (v.name.includes('Male') || v.name.includes('Pavel') || v.name.includes('Yuri'))) || voices.find(v => v.lang.startsWith('ru'));
+        }
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+        loadVoices();
+
+        function initGame() {
+            currentIndex = 0;
+            canClick = true;
+            quizData.sort(() => Math.random() - 0.5);
+            
+            // UI Reset
+            document.getElementById('profile-inner').classList.remove('hidden');
+            document.getElementById('finish-message').classList.add('hidden');
+            document.getElementById('actionArea').classList.remove('hidden');
+            document.getElementById('progress-fill').style.width = "0%";
+            
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = quizData[currentIndex];
+            document.getElementById('val-name').innerText = q.profile.name;
+            document.getElementById('val-age').innerText = q.profile.age;
+            document.getElementById('val-city').innerText = q.profile.city;
+            document.getElementById('val-job').innerText = q.profile.job;
+            
+            document.getElementById('feedback-text').innerText = "Anhören und entscheiden...";
+            document.getElementById('feedback-text').style.color = "var(--primary-color)";
+            
+            // Buttons zurücksetzen
+            document.getElementById('btn-true').className = 'choice-btn';
+            document.getElementById('btn-false').className = 'choice-btn';
+            document.getElementById('btn-true').disabled = false;
+            document.getElementById('btn-false').disabled = false;
+            document.getElementById('next-btn').style.display = 'none';
+            
+            canClick = true;
+        }
+
+        function playAudio() {
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance(quizData[currentIndex].audio);
+            msg.lang = 'ru-RU';
+            msg.voice = maleVoice;
+            msg.pitch = 0.85; // Männlicher Klang
+            msg.rate = 0.85; // Langsamer
+            window.speechSynthesis.speak(msg);
+        }
+
+        function handleChoice(userChoice) {
+            if (!canClick) return;
+            
+            const isCorrect = userChoice === quizData[currentIndex].correct;
+            const feedback = document.getElementById('feedback-text');
+            const clickedBtn = userChoice ? document.getElementById('btn-true') : document.getElementById('btn-false');
+
+            if (isCorrect) {
+                canClick = false;
+                feedback.innerText = "Richtig! ✅";
+                feedback.style.color = "var(--success-color)";
+                clickedBtn.classList.add('btn-correct');
+                setTimeout(nextQuestion, 1200);
+            } else {
+                canClick = false;
+                feedback.innerText = "Leider falsch. ❌";
+                feedback.style.color = "var(--error-color)";
+                clickedBtn.classList.add('btn-wrong');
+                document.getElementById('btn-true').disabled = true;
+                document.getElementById('btn-false').disabled = true;
+                document.getElementById('next-btn').style.display = 'block';
+            }
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if (currentIndex < quizData.length) {
+                updateProgress();
+                loadQuestion();
+            } else {
+                finishGame();
+            }
+        }
+
+        function updateProgress() {
+            document.getElementById('progress-fill').style.width = (currentIndex / quizData.length * 100) + "%";
+        }
+
+        function finishGame() {
+            document.getElementById('progress-fill').style.width = "100%";
+            document.getElementById('profile-inner').classList.add('hidden');
+            document.getElementById('finish-message').classList.remove('hidden');
+            document.getElementById('actionArea').classList.add('hidden');
+        }
+
+        // Start beim Laden
+        window.onload = initGame;
+    </script>
+</body>
+</html>
