@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch: Mein Steckbrief-Generator</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --reset-color: #95a5a6;
+            --bg-color: #f0f4f8;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--primary-color);
+        }
+
+        h1 { font-size: 1.6rem; text-align: center; margin-bottom: 10px; }
+        .instructions { color: #666; text-align: center; margin-bottom: 30px; max-width: 600px; }
+
+        .generator-container {
+            background: white;
+            width: 100%;
+            max-width: 700px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-section {
+            padding: clamp(15px, 4vw, 25px);
+            border-bottom: 1px solid #eee;
+        }
+
+        .form-section h2 { font-size: 1.1rem; margin-top: 0; color: var(--accent-color); display: flex; align-items: center; gap: 10px; }
+
+        .grid-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+        label { font-weight: bold; font-size: 0.9rem; }
+
+        input, select {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+            background: #fff;
+        }
+
+        input:focus, select:focus { border-color: var(--accent-color); }
+
+        /* Ergebnis-Bereich */
+        .result-section {
+            background: #2c3e50;
+            color: white;
+            padding: 25px;
+            text-align: left;
+        }
+
+        #generated-text {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            line-height: 1.6;
+            font-size: 1.1rem;
+            min-height: 80px;
+            margin-bottom: 20px;
+            border: 1px dashed rgba(255,255,255,0.3);
+            white-space: pre-wrap;
+        }
+
+        .button-group { 
+            display: flex; 
+            gap: 15px; 
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 25px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .btn-copy { background: var(--success-color); color: white; flex: 1; min-width: 160px; }
+        .btn-restart { background: var(--reset-color); color: white; flex: 1; min-width: 160px; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+
+        @media (max-width: 600px) {
+            .grid-row { grid-template-columns: 1fr; }
+            .generator-container { border-radius: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Russisch: Steckbrief-Generator</h1>
+    <p class="instructions">Erstelle deinen Vorstellungstext. Das Tool wählt automatisch die richtigen Endungen (Kasus & Genus).</p>
+
+    <div class="generator-container">
+        <!-- 1. Basis-Infos -->
+        <div class="form-section">
+            <h2>👤 Basis-Informationen</h2>
+            <div class="grid-row">
+                <div class="input-group">
+                    <label>Vorname (in Latein):</label>
+                    <input type="text" id="firstName" placeholder="z.B. Anna" oninput="generateText()">
+                </div>
+                <div class="input-group">
+                    <label>Geschlecht (für Grammatik):</label>
+                    <select id="gender" onchange="generateText()">
+                        <option value="f">Weiblich (она)</option>
+                        <option value="m">Männlich (он)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid-row">
+                <div class="input-group">
+                    <label>Alter:</label>
+                    <input type="number" id="age" value="20" min="1" max="99" oninput="generateText()">
+                </div>
+                <div class="input-group">
+                    <label>Nationalität:</label>
+                    <select id="nat" onchange="generateText()">
+                        <option value="немец / немка">Deutsch</option>
+                        <option value="австриец / австрийка">Österreichisch</option>
+                        <option value="швейцарец / швейцарка">Schweizerisch</option>
+                        <option value="русский / русская">Russisch</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Herkunft & Job -->
+        <div class="form-section">
+            <h2>🏠 Herkunft & Tätigkeit</h2>
+            <div class="grid-row">
+                <div class="input-group">
+                    <label>Wohnort:</label>
+                    <select id="city" onchange="generateText()">
+                        <option value="Берлине">Berlin</option>
+                        <option value="Вене">Wien</option>
+                        <option value="Цюрихе">Zürich</option>
+                        <option value="Гамбурге">Hamburg</option>
+                        <option value="Мюнхене">München</option>
+                        <option value="Москве">Moskau</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Tätigkeit:</label>
+                    <select id="job" onchange="generateText()">
+                        <option value="студент / студентка">Student/in</option>
+                        <option value="врачом">Arzt/Ärztin</option>
+                        <option value="менеджером">Manager/in</option>
+                        <option value="преподавателем">Lehrer/in</option>
+                        <option value="инженером">Ingenieur/in</option>
+                        <option value="программистом">Programmierer/in</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Hobbies & Träume -->
+        <div class="form-section">
+            <h2>✨ Interessen & Träume</h2>
+            <div class="grid-row">
+                <div class="input-group">
+                    <label>Hobby:</label>
+                    <select id="hobby" onchange="generateText()">
+                        <option value="читать книги">Bücher lesen</option>
+                        <option value="заниматься спортом">Sport treiben</option>
+                        <option value="путешествовать">Reisen</option>
+                        <option value="изучать иностранные языки">Sprachen lernen</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Mein Traum:</label>
+                    <select id="dream" onchange="generateText()">
+                        <option value="много путешествовать">viel zu reisen</option>
+                        <option value="свободно говорить по-русски">fließend Russisch sprechen</option>
+                        <option value="увидеть мир">die Welt sehen</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ergebnis-Vorschau -->
+        <div class="result-section">
+            <h2 style="color: white">📄 Dein russischer Text:</h2>
+            <div id="generated-text">Warte auf Eingabe...</div>
+            <div class="button-group">
+                <button class="btn-copy" onclick="copyToClipboard()">Text kopieren</button>
+                <button class="btn-restart" onclick="resetGenerator()">Neu starten</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Logik für die russischen Endungen bei Zahlen (год, года, лет)
+        function getAgeString(age) {
+            const lastDigit = age % 10;
+            const lastTwoDigits = age % 100;
+            if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return 'лет';
+            if (lastDigit === 1) return 'год';
+            if (lastDigit >= 2 && lastDigit <= 4) return 'года';
+            return 'лет';
+        }
+
+        function generateText() {
+            const name = document.getElementById('firstName').value || '_____';
+            const gender = document.getElementById('gender').value;
+            const age = document.getElementById('age').value || 0;
+            const city = document.getElementById('city').value;
+            const dream = document.getElementById('dream').value;
+            const hobby = document.getElementById('hobby').value;
+            
+            // Nationalität & Job-Splitting nach Geschlecht
+            const natFull = document.getElementById('nat').value;
+            const nat = (gender === 'm') ? natFull.split(' / ')[0] : natFull.split(' / ')[1];
+            
+            const jobFull = document.getElementById('job').value;
+            let jobString = "";
+            if(jobFull.includes('/')) {
+                // Für Student/Studentin (Nominativ)
+                const s = (gender === 'm') ? jobFull.split(' / ')[0] : jobFull.split(' / ')[1];
+                jobString = `Я ${s}.`;
+            } else {
+                // Für Berufe im Instrumental (Я работаю...)
+                jobString = `Я работаю ${jobFull}.`;
+            }
+
+            const born = (gender === 'm') ? 'родился' : 'родилась';
+            const ageWord = getAgeString(age);
+
+            const text = `Меня зовут ${name}. Мне ${age} ${ageWord}. По национальности я ${nat}. Я ${born} и живу в ${city}. ${jobString} В свободное время я люблю ${hobby}. Я мечтаю ${dream}.`;
+
+            document.getElementById('generated-text').innerText = text;
+        }
+
+        function copyToClipboard() {
+            const text = document.getElementById('generated-text').innerText;
+            if(text.includes('_____')) {
+                alert("Bitte gib erst deinen Namen ein!");
+                return;
+            }
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Text wurde in die Zwischenablage kopiert!");
+            });
+        }
+
+        function resetGenerator() {
+            // Alle Felder auf Default setzen
+            document.getElementById('firstName').value = "";
+            document.getElementById('gender').selectedIndex = 0;
+            document.getElementById('age').value = 20;
+            document.getElementById('nat').selectedIndex = 0;
+            document.getElementById('city').selectedIndex = 0;
+            document.getElementById('job').selectedIndex = 0;
+            document.getElementById('hobby').selectedIndex = 0;
+            document.getElementById('dream').selectedIndex = 0;
+            
+            // Text neu generieren
+            generateText();
+        }
+
+        // Initialisierung beim Laden
+        window.onload = generateText;
+    </script>
+</body>
+</html>
