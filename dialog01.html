@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch: Dialog-Trainer</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --next-color: #e67e22;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--primary-color);
+        }
+
+        h1 { font-size: 1.5rem; text-align: center; margin-bottom: 5px; }
+        .instructions { color: #666; text-align: center; margin-bottom: 25px; max-width: 550px; }
+
+        .quiz-card {
+            background: white;
+            width: 100%;
+            max-width: 500px;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .question-box {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-left: 5px solid var(--accent-color);
+        }
+
+        .question-label { font-size: 0.8rem; text-transform: uppercase; color: #95a5a6; margin-bottom: 5px; }
+        .question-text { font-size: 1.3rem; font-weight: bold; color: var(--primary-color); }
+
+        .play-btn {
+            background: var(--accent-color);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+        .play-btn:hover { transform: scale(1.1); }
+        .play-btn svg { fill: white; width: 24px; height: 24px; }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid #eee;
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            text-align: left;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .option-btn:hover:not(:disabled) { border-color: var(--accent-color); background: #f0f7ff; }
+        .option-btn.correct { background-color: #ccffcc; border-color: var(--success-color); color: #1b5e20; }
+        .option-btn.wrong { background-color: #fdedec; border-color: var(--error-color); color: #7b241c; }
+
+        .progress-bar {
+            width: 100%;
+            max-width: 500px;
+            height: 8px;
+            background: #ddd;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        #progress-fill { height: 100%; background: var(--success-color); width: 0%; transition: width 0.4s; }
+
+        #feedback-text { font-weight: bold; margin: 15px 0; min-height: 24px; }
+
+        #next-btn {
+            background: var(--next-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+            margin: 10px auto 0;
+        }
+
+        .btn-restart { margin-top: 30px; background: none; border: none; color: #7f8c8d; cursor: pointer; text-decoration: underline; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <h1>Thema 1: Multiple-Choice-Dialog</h1>
+    <p class="instructions">Höre die Frage und wähle die logisch passende Antwort aus.</p>
+
+    <div class="progress-bar"><div id="progress-fill"></div></div>
+
+    <div class="quiz-card" id="quizCard">
+        <div id="quiz-content">
+            <div class="question-box">
+                <div class="question-label">Вопрос (Frage):</div>
+                <div class="question-text" id="questionText">...</div>
+                <button class="play-btn" onclick="playQuestion()" title="Anhören">
+                    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+            </div>
+
+            <div id="feedback-text">Wähle eine Antwort:</div>
+
+            <div class="options-container" id="options">
+                <!-- Buttons werden hier geladen -->
+            </div>
+
+            <button id="next-btn" onclick="nextQuestion()">Nächste Frage ➔</button>
+        </div>
+
+        <div id="finish-screen" class="hidden">
+            <h2 style="color: var(--success-color)">🎉 Ausgezeichnet!</h2>
+            <p>Du kannst nun logisch auf Fragen zu deiner Person reagieren.</p>
+        </div>
+    </div>
+
+    <button class="btn-restart" onclick="initGame()">Spiel neu starten</button>
+
+    <script>
+        const dialogData = [
+            { q: 'Как тебя зовут?', options: ['Меня зовут Иван.', 'Я живу в Москве.', 'У меня есть собаka.'], correct: 0 },
+            { q: 'Кем ты работаешь?', options: ['Я из Германии.', 'Я работаю врачом.', 'Я очень люблю читать.'], correct: 1 },
+            { q: 'Сколько тебе лет?', options: ['Мне двадцать лет.', 'Я учусь в школе.', 'Я хорошо говорю по-русски.'], correct: 0 },
+            { q: 'Где ты живёшь?', options: ['Я родился в Ейске.', 'Я живу в Москве.', 'В свободное время я гуляю.'], correct: 1 },
+            { q: 'У тебя есть домашние животные?', options: ['Да, я работаю здесь.', 'Нет, я живу один.', 'Да, у меня есть собака.'], correct: 2 },
+            { q: 'Что ты делаешь в свободное время?', options: ['Я изучаю французский.', 'Я русский по национальности.', 'Мне скоро будет 26 лет.'], correct: 0 },
+            { q: 'Какие языки ты знаешь?', options: ['Я люблю путешествовать.', 'Я знаю английский и русский.', 'Я переехала в Москву.'], correct: 1 },
+            { q: 'Где ты родилась?', options: ['Я родилась в России.', 'Я работаю преподавателем.', 'У меня есть кошка.'], correct: 0 },
+            { q: 'Ты учишься или работаешь?', options: ['Я хочу посетить США.', 'Я не учусь, я работаю.', 'Моё имя — Ирина.'], correct: 1 },
+            { q: 'О чём ты мечтаешь?', options: ['Я мечтаю много путешествовать.', 'Я неплохо говорю по-чешски.', 'Я выросла в маленьком городе.'], correct: 0 }
+        ];
+
+        let currentIndex = 0;
+        let canClick = true;
+        let maleVoice = null;
+
+        function loadVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            maleVoice = voices.find(v => v.lang.startsWith('ru') && (v.name.includes('Male') || v.name.includes('Pavel') || v.name.includes('Yuri'))) || voices.find(v => v.lang.startsWith('ru'));
+        }
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+        loadVoices();
+
+        function initGame() {
+            currentIndex = 0;
+            dialogData.sort(() => Math.random() - 0.5);
+            document.getElementById('quiz-content').classList.remove('hidden');
+            document.getElementById('finish-screen').classList.add('hidden');
+            loadQuestion();
+            updateProgress();
+        }
+
+        function loadQuestion() {
+            const data = dialogData[currentIndex];
+            document.getElementById('questionText').innerText = data.q;
+            document.getElementById('feedback-text').innerText = "Wähle eine Antwort:";
+            document.getElementById('feedback-text').style.color = "var(--primary-color)";
+            document.getElementById('next-btn').style.display = 'none';
+            
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+            
+            data.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(index, btn);
+                optionsContainer.appendChild(btn);
+            });
+            canClick = true;
+        }
+
+        function playQuestion() {
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance(dialogData[currentIndex].q);
+            msg.lang = 'ru-RU';
+            msg.voice = maleVoice;
+            msg.pitch = 0.85; 
+            msg.rate = 0.85;
+            window.speechSynthesis.speak(msg);
+        }
+
+        function checkAnswer(selectedIndex, btnElement) {
+            if (!canClick) return;
+            const correctIndex = dialogData[currentIndex].correct;
+
+            if (selectedIndex === correctIndex) {
+                canClick = false;
+                btnElement.classList.add('correct');
+                document.getElementById('feedback-text').innerText = "Richtig! ✅";
+                document.getElementById('feedback-text').style.color = "var(--success-color)";
+                setTimeout(nextQuestion, 1500);
+            } else {
+                canClick = false;
+                btnElement.classList.add('wrong');
+                document.getElementById('feedback-text').innerText = "Leider falsch. ❌";
+                document.getElementById('feedback-text').style.color = "var(--error-color)";
+                document.getElementById('next-btn').style.display = 'block';
+                document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            }
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if (currentIndex < dialogData.length) {
+                updateProgress();
+                loadQuestion();
+            } else {
+                finishGame();
+            }
+        }
+
+        function updateProgress() {
+            document.getElementById('progress-fill').style.width = (currentIndex / dialogData.length * 100) + "%";
+        }
+
+        function finishGame() {
+            document.getElementById('progress-fill').style.width = "100%";
+            document.getElementById('quiz-content').classList.add('hidden');
+            document.getElementById('finish-screen').classList.remove('hidden');
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>
