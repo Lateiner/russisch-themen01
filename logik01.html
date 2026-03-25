@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch: Logische Reihenfolge</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--primary-color);
+        }
+
+        h1 { font-size: 1.5rem; text-align: center; margin-bottom: 5px; }
+        .instructions { color: #666; text-align: center; margin-bottom: 25px; max-width: 600px; }
+
+        .sortable-list {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sort-item {
+            background: var(--card-bg);
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: grab;
+            transition: all 0.2s;
+            user-select: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .sort-item:active { cursor: grabbing; transform: scale(1.02); }
+        .sort-item.correct { border-color: var(--success-color); background-color: #ccffcc; }
+
+        .number-badge {
+            background: var(--accent-color);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .content {
+            flex-grow: 1;
+            font-size: 0.95rem;
+        }
+
+        .content b { display: block; color: var(--primary-color); }
+        .content span { font-size: 0.8rem; color: #7f8c8d; }
+
+        /* Pfeile für Mobile-Sortierung */
+        .arrows {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .arrow-btn {
+            background: #eee;
+            border: none;
+            border-radius: 4px;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .arrow-btn:hover { background: #ddd; }
+
+        .controls {
+            margin-top: 35px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button.main-btn {
+            padding: 12px 25px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            background: var(--accent-color);
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        .btn-check { background: var(--success-color) !important; }
+        .btn-restart { background: #95a5a6 !important; }
+
+        #feedback { margin-top: 20px; font-weight: bold; height: 24px; }
+    </style>
+</head>
+<body>
+
+    <h1>Thema 1: Logische Reihenfolge</h1>
+    <p class="instructions">Bringe die Themen in eine sinnvolle Reihenfolge für eine Vorstellung (vom Namen bis zum Traum). <br>Nutze die Pfeile oder schiebe die Kacheln.</p>
+
+    <div class="sortable-list" id="sortList">
+        <!-- Items werden hier geladen -->
+    </div>
+
+    <div id="feedback"></div>
+
+    <div class="controls">
+        <button class="main-btn btn-check" onclick="checkOrder()">Reihenfolge prüfen</button>
+        <button class="main-btn" onclick="showSolution()">Lösung anzeigen</button>
+        <button class="main-btn btn-restart" onclick="initGame()">Neu starten</button>
+    </div>
+
+    <script>
+        // Die korrekte logische Reihenfolge laut Transkript/Pädagogik
+        const correctOrder = [
+            { id: 'name', title: 'Имя / Имя Фамилия', sub: 'Name & Vatersname' },
+            { id: 'age', title: 'Возраст / Дата рождения', sub: 'Alter & Geburtsdatum' },
+            { id: 'place', title: 'Национальность / Место жительства', sub: 'Nationalität & Wohnort' },
+            { id: 'work', title: 'Учеба / Работа', sub: 'Studium & Beruf' },
+            { id: 'hobbies', title: 'Хобби / Свободное время', sub: 'Interessen & Freizeit' },
+            { id: 'pets', title: 'Домашние животные', sub: 'Haustiere' },
+            { id: 'travel', title: 'Путешествия', sub: 'Besuchte & Wunschländer' },
+            { id: 'languages', title: 'Иностранные языки', sub: 'Sprachkenntnisse' },
+            { id: 'motivation', title: 'Почему русский язык?', sub: 'Grund für das Russischlernen' },
+            { id: 'dreams', title: 'Мечты', sub: 'Träume & Zukunftspläne' }
+        ];
+
+        let currentItems = [];
+
+        function initGame() {
+            // Zufällig mischen
+            currentItems = [...correctOrder].sort(() => Math.random() - 0.5);
+            renderList();
+            document.getElementById('feedback').innerText = '';
+        }
+
+        function renderList() {
+            const listContainer = document.getElementById('sortList');
+            listContainer.innerHTML = '';
+
+            currentItems.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'sort-item';
+                div.draggable = true;
+                div.dataset.id = item.id;
+                
+                div.innerHTML = `
+                    <div class="number-badge">${index + 1}</div>
+                    <div class="content">
+                        <b>${item.title}</b>
+                        <span>${item.sub}</span>
+                    </div>
+                    <div class="arrows">
+                        <button class="arrow-btn" onclick="moveItem(${index}, -1)">▲</button>
+                        <button class="arrow-btn" onclick="moveItem(${index}, 1)">▼</button>
+                    </div>
+                `;
+
+                // Drag & Drop Events
+                div.ondragstart = (e) => e.dataTransfer.setData('text/plain', index);
+                div.ondragover = (e) => e.preventDefault();
+                div.ondrop = (e) => {
+                    const fromIndex = e.dataTransfer.getData('text/plain');
+                    handleDrop(parseInt(fromIndex), index);
+                };
+
+                listContainer.appendChild(div);
+            });
+        }
+
+        function moveItem(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex >= 0 && newIndex < currentItems.length) {
+                const temp = currentItems[index];
+                currentItems[index] = currentItems[newIndex];
+                currentItems[newIndex] = temp;
+                renderList();
+            }
+        }
+
+        function handleDrop(from, to) {
+            const item = currentItems.splice(from, 1)[0];
+            currentItems.splice(to, 0, item);
+            renderList();
+        }
+
+        function checkOrder() {
+            let correctCount = 0;
+            const items = document.querySelectorAll('.sort-item');
+            
+            currentItems.forEach((item, index) => {
+                if (item.id === correctOrder[index].id) {
+                    items[index].classList.add('correct');
+                    correctCount++;
+                } else {
+                    items[index].classList.remove('correct');
+                }
+            });
+
+            const feedback = document.getElementById('feedback');
+            if (correctCount === correctOrder.length) {
+                feedback.innerText = "🎉 Perfekt! Das ist eine logische Vorstellung.";
+                feedback.style.color = "var(--success-color)";
+            } else {
+                feedback.innerText = `${correctCount} von 10 sind an der richtigen Stelle.`;
+                feedback.style.color = "orange";
+            }
+        }
+
+        function showSolution() {
+            currentItems = [...correctOrder];
+            renderList();
+            checkOrder();
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
