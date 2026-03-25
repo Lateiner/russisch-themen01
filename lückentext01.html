@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch: Grammatik Direkt-Feedback</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--primary-color);
+            line-height: 1.8;
+        }
+
+        h1 { font-size: 1.5rem; text-align: center; margin-bottom: 5px; }
+        .instructions { color: #666; text-align: center; margin-bottom: 20px; max-width: 600px; }
+
+        .container {
+            background: white;
+            padding: clamp(15px, 5vw, 35px);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            max-width: 750px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .story-text {
+            font-size: 1.15rem;
+            text-align: left;
+        }
+
+        /* Dropdown Styling */
+        select {
+            appearance: none;
+            background-color: #fff;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            color: var(--primary-color);
+            cursor: pointer;
+            margin: 4px 2px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        select:hover { border-color: var(--accent-color); }
+
+        /* Status-Farben */
+        select.correct {
+            border-color: var(--success-color) !important;
+            background-color: #eafaf1;
+            color: #1b5e20;
+        }
+
+        select.wrong {
+            border-color: var(--error-color) !important;
+            background-color: #fdedec;
+            color: #7b241c;
+        }
+
+        select.solved {
+            border-color: var(--accent-color);
+            background-color: #ebf5fb;
+            font-weight: bold;
+        }
+
+        /* Info-Bereich */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: var(--accent-color);
+            background: #f0f7ff;
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+
+        .controls {
+            margin-top: 35px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 25px;
+            border-radius: 10px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .btn-solution { background-color: var(--accent-color); color: white; }
+        .btn-reset { background-color: #95a5a6; color: white; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        @media (max-width: 480px) {
+            .story-text { font-size: 1rem; line-height: 2.2; }
+            select { font-size: 0.95rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Thema 1: О себе (Grammatik-Check)</h1>
+    <p class="instructions">Wähle die richtige Form. Das Feedback erscheint sofort.</p>
+
+    <div class="container">
+        <div class="status-bar">
+            <span>Fortschritt:</span>
+            <span id="counter">0 / 10 gelöst</span>
+        </div>
+
+        <div class="story-text" id="story">
+            Привет! Меня зовут Ира. Я родилась в 
+            <select onchange="validate(this)" data-answer="России">
+                <option value="">...</option>
+                <option value="Россия">Россия</option>
+                <option value="России">России</option>
+            </select>. 
+            Мне 25 
+            <select onchange="validate(this)" data-answer="лет">
+                <option value="">...</option>
+                <option value="год">год</option>
+                <option value="года">года</option>
+                <option value="лет">лет</option>
+            </select>. 
+            Сейчас я живу в 
+            <select onchange="validate(this)" data-answer="Москве">
+                <option value="">...</option>
+                <option value="Москва">Москва</option>
+                <option value="Москве">Москве</option>
+            </select>. 
+            Я работаю 
+            <select onchange="validate(this)" data-answer="преподавателем">
+                <option value="">...</option>
+                <option value="преподаватель">преподаватель</option>
+                <option value="преподавателем">преподавателем</option>
+            </select>. 
+            В свободное время я увлекаюсь 
+            <select onchange="validate(this)" data-answer="йогой">
+                <option value="">...</option>
+                <option value="йога">йога</option>
+                <option value="йогой">йогой</option>
+            </select>. 
+            У меня есть собака. Ему 2 
+            <select onchange="validate(this)" data-answer="года">
+                <option value="">...</option>
+                <option value="года">года</option>
+                <option value="лет">лет</option>
+            </select>. 
+            Я очень люблю 
+            <select onchange="validate(this)" data-answer="путешествовать">
+                <option value="">...</option>
+                <option value="путешествую">путешествую</option>
+                <option value="путешествовать">путешествовать</option>
+            </select>. 
+            Я уже посетила много 
+            <select onchange="validate(this)" data-answer="стран">
+                <option value="">...</option>
+                <option value="страны">страны</option>
+                <option value="стран">стран</option>
+            </select>. 
+            Я хорошо говорю по-
+            <select onchange="validate(this)" data-answer="английски">
+                <option value="">...</option>
+                <option value="английский">английский</option>
+                <option value="английски">английски</option>
+            </select> 
+            и хочу посетить 
+            <select onchange="validate(this)" data-answer="США">
+                <option value="">...</option>
+                <option value="США">США</option>
+                <option value="СШАх">СШАх</option>
+            </select>.
+        </div>
+
+        <div class="controls">
+            <button class="btn-solution" onclick="showSolution()">Lösung anzeigen</button>
+            <button class="btn-reset" onclick="resetForm()">Neu starten</button>
+        </div>
+    </div>
+
+    <script>
+        function validate(selectElement) {
+            const selectedValue = selectElement.value;
+            const correctAnswer = selectElement.getAttribute('data-answer');
+
+            if (selectedValue === "") {
+                selectElement.classList.remove('correct', 'wrong');
+            } else if (selectedValue === correctAnswer) {
+                selectElement.classList.remove('wrong');
+                selectElement.classList.add('correct');
+            } else {
+                selectElement.classList.remove('correct');
+                selectElement.classList.add('wrong');
+            }
+            updateCounter();
+        }
+
+        function updateCounter() {
+            const correctOnes = document.querySelectorAll('select.correct').length;
+            const total = document.querySelectorAll('select').length;
+            document.getElementById('counter').innerText = `${correctOnes} / ${total} gelöst`;
+            
+            if (correctOnes === total) {
+                document.getElementById('counter').innerText = "🎉 Alles richtig!";
+                document.getElementById('counter').style.color = "var(--success-color)";
+            } else {
+                document.getElementById('counter').style.color = "var(--accent-color)";
+            }
+        }
+
+        function showSolution() {
+            const selects = document.querySelectorAll('select');
+            selects.forEach(select => {
+                const correctAnswer = select.getAttribute('data-answer');
+                select.value = correctAnswer;
+                select.classList.remove('wrong');
+                select.classList.add('correct', 'solved');
+            });
+            updateCounter();
+        }
+
+        function resetForm() {
+            const selects = document.querySelectorAll('select');
+            selects.forEach(select => {
+                select.value = "";
+                select.classList.remove('correct', 'wrong', 'solved');
+            });
+            updateCounter();
+        }
+    </script>
+</body>
+</html>
