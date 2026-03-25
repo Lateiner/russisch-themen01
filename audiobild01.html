@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch Hörverstehen: 10 Sätze</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--primary-color);
+        }
+
+        h1 { font-size: 1.5rem; text-align: center; margin-bottom: 5px; }
+        .instructions { color: #666; text-align: center; margin-bottom: 25px; max-width: 500px; font-size: 0.9rem; }
+
+        .audio-card {
+            background: white;
+            padding: clamp(15px, 5vw, 30px);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 700px;
+            text-align: center;
+        }
+
+        .play-btn {
+            width: 70px;
+            height: 70px;
+            background: var(--accent-color);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            transition: transform 0.2s, background 0.2s;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .play-btn:hover { transform: scale(1.05); background: #2980b9; }
+        .play-btn svg { fill: white; width: 35px; height: 35px; }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .image-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        @media (max-width: 400px) {
+            .image-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .img-item {
+            background: #fff;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            padding: 15px 5px;
+            font-size: 2.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+        }
+
+        .img-item span { font-size: 0.7rem; color: #999; margin-top: 5px; font-weight: bold; }
+
+        .img-item:hover { border-color: var(--accent-color); background: #f0f7ff; }
+        .img-item.correct { border-color: var(--success-color); background: #ccffcc; }
+        .img-item.wrong { border-color: var(--error-color); background: #fdedec; }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #eee;
+            border-radius: 3px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--success-color);
+            width: 0%;
+            transition: width 0.4s;
+        }
+
+        .controls { margin-top: 30px; }
+        .btn-restart {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            background: #95a5a6;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #feedback-text { font-weight: bold; min-height: 24px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>О себе: Hörverstehen (männlich)</h1>
+    <p class="instructions">Hör dir den Satz an und klicke auf das passende Symbol.</p>
+
+    <div class="audio-card">
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+        
+        <button class="play-btn" onclick="playSentence()" title="Satz anhören">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        
+        <div id="feedback-text">Klicke auf Play!</div>
+
+        <div class="image-grid" id="imageGrid"></div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-restart" onclick="initGame()">Neu starten</button>
+    </div>
+
+    <script>
+        const quizData = [
+            { id: 1, text: 'Меня зовут Иван Петрович.', img: '👨‍💼', label: 'Name' },
+            { id: 2, text: 'Я родился в России.', img: '🇷🇺', label: 'Herkunft' },
+            { id: 3, text: 'Сейчас я живу в Москве.', img: '🏰', label: 'Wohnort' },
+            { id: 4, text: 'Мне тридцать лет.', img: '🎂', label: 'Alter' },
+            { id: 5, text: 'Я работаю преподавателем.', img: '👨‍🏫', label: 'Beruf' },
+            { id: 6, text: 'Я хорошо говорю по-английски.', img: '🌐', label: 'Sprache' },
+            { id: 7, text: 'Я увлекаюсь йогой.', img: '🧘‍♂️', label: 'Hobby' },
+            { id: 8, text: 'У меня есть собака.', img: '🐶', label: 'Haustier' },
+            { id: 9, text: 'Я люблю путешествовать.', img: '✈️', label: 'Reisen' },
+            { id: 10, text: 'Я мечтаю много путешествовать.', img: '✨', label: 'Traum' }
+        ];
+
+        let currentIndex = 0;
+        let shuffledQuiz = [];
+        let canClick = true;
+        let russianMaleVoice = null;
+
+        function loadVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            const ruVoices = voices.filter(v => v.lang.startsWith('ru'));
+            // Suche gezielt nach bekannten männlichen Stimmen-IDs/Namen
+            russianMaleVoice = ruVoices.find(v => v.name.includes('Pavel') || v.name.includes('Yuri') || v.name.includes('Male')) || ruVoices[0];
+        }
+
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+        loadVoices();
+
+        function initGame() {
+            currentIndex = 0;
+            canClick = true;
+            shuffledQuiz = [...quizData].sort(() => Math.random() - 0.5);
+            document.getElementById('feedback-text').innerText = "Klicke auf Play!";
+            document.getElementById('feedback-text').style.color = "var(--primary-color)";
+            updateProgress();
+            renderGrid();
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('imageGrid');
+            grid.innerHTML = '';
+            // Statische Anzeige der Bilder (nicht bei jeder Frage mischen, um Auge zu entlasten)
+            quizData.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'img-item';
+                div.innerHTML = `${item.img} <span>${item.label}</span>`;
+                div.onclick = () => checkAnswer(item.id, div);
+                grid.appendChild(div);
+            });
+        }
+
+        function playSentence() {
+            if (currentIndex >= shuffledQuiz.length) return;
+            
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance();
+            msg.text = shuffledQuiz[currentIndex].text;
+            msg.lang = 'ru-RU';
+            msg.voice = russianMaleVoice;
+            msg.rate = 0.75;  // Langsameres Tempo
+            msg.pitch = 0.85; // Tiefere Tonhöhe (männlicher Klang)
+            
+            window.speechSynthesis.speak(msg);
+            document.getElementById('feedback-text').innerText = "Höre zu...";
+        }
+
+        function checkAnswer(id, element) {
+            if (!canClick || currentIndex >= shuffledQuiz.length) return;
+            
+            if (id === shuffledQuiz[currentIndex].id) {
+                canClick = false;
+                element.classList.add('correct');
+                document.getElementById('feedback-text').innerText = "Richtig! ✅";
+                document.getElementById('feedback-text').style.color = "var(--success-color)";
+                
+                setTimeout(() => {
+                    element.classList.remove('correct');
+                    currentIndex++;
+                    updateProgress();
+                    if (currentIndex < shuffledQuiz.length) {
+                        document.getElementById('feedback-text').innerText = "Nächster Satz: Klicke Play!";
+                        document.getElementById('feedback-text').style.color = "var(--primary-color)";
+                        canClick = true;
+                    } else {
+                        finishGame();
+                    }
+                }, 1500);
+            } else {
+                element.classList.add('wrong');
+                document.getElementById('feedback-text').innerText = "Versuch es nochmal! ❌";
+                document.getElementById('feedback-text').style.color = "var(--error-color)";
+                setTimeout(() => element.classList.remove('wrong'), 800);
+            }
+        }
+
+        function updateProgress() {
+            const progress = (currentIndex / shuffledQuiz.length) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+        }
+
+        function finishGame() {
+            document.getElementById('feedback-text').innerText = "🎉 Perfekt! Alles verstanden.";
+            document.getElementById('imageGrid').innerHTML = "<div style='grid-column: 1/-1; padding: 40px; font-weight: bold;'>Hervorragend! Du hast alle 10 Sätze erkannt.</div>";
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
