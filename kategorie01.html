@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch: Wörter sortieren</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --work-color: #3498db;
+            --leisure-color: #e67e22;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--primary-color);
+        }
+
+        h1 { font-size: 1.5rem; text-align: center; margin-bottom: 5px; }
+        .instructions { color: #666; text-align: center; margin-bottom: 20px; max-width: 600px; }
+
+        /* Wort-Pool */
+        .pool-container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            min-height: 100px;
+            margin-bottom: 30px;
+        }
+
+        .word-card {
+            background: #eee;
+            padding: 10px 18px;
+            border-radius: 25px;
+            cursor: grab;
+            user-select: none;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            font-size: 0.95rem;
+        }
+
+        .word-card:hover { background: #e0e0e0; }
+        .word-card.selected { 
+            border-color: var(--primary-color); 
+            background: #d1d8e0;
+            transform: scale(1.05);
+        }
+
+        /* Kategorien-Bereich */
+        .categories-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        @media (max-width: 600px) {
+            .categories-container { grid-template-columns: 1fr; }
+        }
+
+        .bucket {
+            background: white;
+            border: 3px dashed #ccc;
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .bucket h2 { 
+            margin-top: 0; 
+            font-size: 1.2rem; 
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+            width: 100%;
+            text-align: center;
+        }
+
+        .bucket.work { border-color: var(--work-color); }
+        .bucket.leisure { border-color: var(--leisure-color); }
+        
+        .bucket.drag-over { background: #f0f8ff; transform: scale(1.02); }
+
+        .sorted-words {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .word-card.correct { background: #ccffcc !important; border-color: #27ae60; cursor: default; }
+        .word-card.wrong { background: #ffcccc !important; border-color: #e74c3c; }
+
+        .controls {
+            margin-top: 40px;
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            padding: 12px 25px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+        }
+
+        .btn-restart { background: #95a5a6; color: white; }
+        .btn-solve { background: var(--work-color); color: white; }
+        button:hover { opacity: 0.9; }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>Thema 1: Kategorien sortieren</h1>
+    <p class="instructions">Ordne die Wörter zu: <b>Работа / Учеба</b> (Arbeit/Studium) oder <b>Свободное время</b> (Freizeit). <br>Klicke ein Wort an und dann den passenden Kasten.</p>
+
+    <div class="pool-container" id="wordPool">
+        <!-- Wörter werden hier geladen -->
+    </div>
+
+    <div class="categories-container">
+        <div class="bucket work" id="bucket-work" ondrop="drop(event, 'work')" ondragover="allowDrop(event)" onclick="selectBucket('work')">
+            <h2 style="color: var(--work-color)">Работа / Учеба</h2>
+            <div class="sorted-words" id="list-work"></div>
+        </div>
+
+        <div class="bucket leisure" id="bucket-leisure" ondrop="drop(event, 'leisure')" ondragover="allowDrop(event)" onclick="selectBucket('leisure')">
+            <h2 style="color: var(--leisure-color)">Свободное время</h2>
+            <div class="sorted-words" id="list-leisure"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-restart" onclick="initGame()">Neu starten</button>
+        <button class="btn-solve" onclick="showSolution()">Lösung anzeigen</button>
+    </div>
+
+    <script>
+        const words = [
+            { text: 'преподаватель', cat: 'work' },
+            { text: 'университет', cat: 'work' },
+            { text: 'работать', cat: 'work' },
+            { text: 'учиться', cat: 'work' },
+            { text: 'школа', cat: 'work' },
+            { text: 'профессия', cat: 'work' },
+            { text: 'хобби', cat: 'leisure' },
+            { text: 'путешествовать', cat: 'leisure' },
+            { text: 'читать', cat: 'leisure' },
+            { text: 'йога', cat: 'leisure' },
+            { text: 'гулять', cat: 'leisure' },
+            { text: 'собака', cat: 'leisure' }
+        ];
+
+        let selectedWordElement = null;
+
+        function initGame() {
+            const pool = document.getElementById('wordPool');
+            document.getElementById('list-work').innerHTML = '';
+            document.getElementById('list-leisure').innerHTML = '';
+            pool.innerHTML = '';
+            selectedWordElement = null;
+
+            // Wörter mischen
+            const shuffled = [...words].sort(() => Math.random() - 0.5);
+
+            shuffled.forEach((word, index) => {
+                const span = document.createElement('div');
+                span.className = 'word-card';
+                span.innerText = word.text;
+                span.draggable = true;
+                span.id = 'word-' + index;
+                span.dataset.cat = word.cat;
+
+                // Drag Events
+                span.ondragstart = (e) => {
+                    e.dataTransfer.setData("text", e.target.id);
+                    selectedWordElement = e.target;
+                };
+
+                // Click Events (Mobile)
+                span.onclick = (e) => {
+                    e.stopPropagation();
+                    document.querySelectorAll('.word-card').forEach(c => c.classList.remove('selected'));
+                    span.classList.add('selected');
+                    selectedWordElement = span;
+                };
+
+                pool.appendChild(span);
+            });
+        }
+
+        // Drag & Drop Logik
+        function allowDrop(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+        
+        function drop(e, category) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            const id = e.dataTransfer.getData("text");
+            const element = document.getElementById(id);
+            sortWord(element, category);
+        }
+
+        // Click-to-Sort Logik (Mobile/Tablet)
+        function selectBucket(category) {
+            if (selectedWordElement) {
+                sortWord(selectedWordElement, category);
+            }
+        }
+
+        function sortWord(element, category) {
+            if (!element) return;
+            const targetList = document.getElementById('list-' + category);
+            
+            // Korrektheit prüfen
+            if (element.dataset.cat === category) {
+                element.classList.remove('selected', 'wrong');
+                element.classList.add('correct');
+                element.draggable = false;
+                element.onclick = null;
+                targetList.appendChild(element);
+                selectedWordElement = null;
+            } else {
+                // Falsche Einsortierung
+                element.classList.add('wrong');
+                setTimeout(() => element.classList.remove('wrong'), 800);
+            }
+        }
+
+        function showSolution() {
+            const allWords = document.querySelectorAll('.word-card');
+            allWords.forEach(element => {
+                const category = element.dataset.cat;
+                const targetList = document.getElementById('list-' + category);
+                element.classList.remove('selected', 'wrong');
+                element.classList.add('correct');
+                element.draggable = false;
+                targetList.appendChild(element);
+            });
+            selectedWordElement = null;
+        }
+
+        // Deaktiviert Hover-Effekt beim Verlassen der Box
+        document.querySelectorAll('.bucket').forEach(b => {
+            b.ondragleave = (e) => e.currentTarget.classList.remove('drag-over');
+        });
+
+        initGame();
+    </script>
+</body>
+</html>
