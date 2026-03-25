@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch: Sätze verbinden</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --match-bg: #ccffcc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--primary-color);
+            overflow-x: hidden;
+        }
+
+        h1 { font-size: 1.5rem; text-align: center; margin-bottom: 10px; }
+        .instructions { color: #666; text-align: center; margin-bottom: 30px; max-width: 600px; }
+
+        .matching-container {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 800px;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        /* Spalten-Layout */
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            flex: 1;
+            z-index: 2;
+        }
+
+        .item {
+            background: white;
+            border: 2px solid #ddd;
+            padding: 12px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            position: relative;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .item:hover { border-color: var(--accent-color); transform: translateX(2px); }
+        .item.selected { border-color: var(--accent-color); background-color: #ebf5fb; box-shadow: 0 0 10px rgba(52, 152, 219, 0.3); }
+        .item.matched { background-color: var(--match-bg); border-color: var(--success-color); cursor: default; pointer-events: none; }
+        .item.error { border-color: var(--error-color); background-color: #fdedec; }
+
+        /* SVG für die Linien */
+        #line-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 25px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+        }
+
+        .btn-restart { background: #95a5a6; color: white; }
+        .btn-solve { background: var(--accent-color); color: white; }
+
+        @media (max-width: 600px) {
+            .matching-container { gap: 20px; }
+            .item { font-size: 0.85rem; padding: 10px; }
+            h1 { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Thema 1: Sätze verbinden</h1>
+    <p class="instructions">Klicke links einen Satzanfang und rechts das passende Ende an.</p>
+
+    <div class="matching-container" id="gameArea">
+        <svg id="line-canvas"></svg>
+        
+        <div class="column" id="left-col">
+            <!-- Satzanfänge werden hier geladen -->
+        </div>
+
+        <div class="column" id="right-col">
+            <!-- Satzenden werden hier geladen -->
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-restart" onclick="initGame()">Neu starten</button>
+        <button class="btn-solve" onclick="showSolution()">Lösung anzeigen</button>
+    </div>
+
+    <script>
+        const pairs = [
+            { id: 1, start: 'Я родилась...', end: '...в России.' },
+            { id: 2, start: 'Мне сейчас...', end: '...25 лет.' },
+            { id: 3, start: 'Я работаю...', end: '...преподавателем.' },
+            { id: 4, start: 'В свободное время...', end: '...я занимаюсь йогой.' },
+            { id: 5, start: 'У меня...', end: '...есть собака.' },
+            { id: 6, start: 'Я очень люблю...', end: '...путешествовать.' },
+            { id: 7, start: 'Я хочу...', end: '...посетить США.' },
+            { id: 8, start: 'Я неплохо говорю...', end: '...по-английски.' }
+        ];
+
+        let selectedLeft = null;
+        let connections = []; // Speichert IDs verbundener Paare
+
+        function initGame() {
+            selectedLeft = null;
+            connections = [];
+            const leftCol = document.getElementById('left-col');
+            const rightCol = document.getElementById('right-col');
+            const canvas = document.getElementById('line-canvas');
+            
+            leftCol.innerHTML = '';
+            rightCol.innerHTML = '';
+            canvas.innerHTML = '';
+
+            // Links: Anfänge (in Reihenfolge)
+            pairs.forEach(pair => {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerText = pair.start;
+                div.dataset.id = pair.id;
+                div.onclick = () => selectLeft(div);
+                leftCol.appendChild(div);
+            });
+
+            // Rechts: Enden (gemischt)
+            const shuffledPairs = [...pairs].sort(() => Math.random() - 0.5);
+            shuffledPairs.forEach(pair => {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerText = pair.end;
+                div.dataset.id = pair.id;
+                div.onclick = () => selectRight(div);
+                rightCol.appendChild(div);
+            });
+
+            window.addEventListener('resize', drawAllLines);
+        }
+
+        function selectLeft(element) {
+            document.querySelectorAll('#left-col .item').forEach(i => i.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedLeft = element;
+        }
+
+        function selectRight(element) {
+            if (!selectedLeft) return;
+
+            const leftId = selectedLeft.dataset.id;
+            const rightId = element.dataset.id;
+
+            if (leftId === rightId) {
+                // Richtig
+                selectedLeft.classList.add('matched');
+                element.classList.add('matched');
+                connections.push(leftId);
+                drawAllLines();
+                selectedLeft = null;
+                document.querySelectorAll('.item').forEach(i => i.classList.remove('selected'));
+            } else {
+                // Falsch
+                element.classList.add('error');
+                setTimeout(() => element.classList.remove('error'), 500);
+            }
+        }
+
+        function drawAllLines() {
+            const canvas = document.getElementById('line-canvas');
+            canvas.innerHTML = '';
+            
+            connections.forEach(id => {
+                const leftEl = document.querySelector(`#left-col .item[data-id="${id}"]`);
+                const rightEl = document.querySelector(`#right-col .item[data-id="${id}"]`);
+                drawLine(leftEl, rightEl);
+            });
+        }
+
+        function drawLine(el1, el2) {
+            const canvas = document.getElementById('line-canvas');
+            const rect1 = el1.getBoundingClientRect();
+            const rect2 = el2.getBoundingClientRect();
+            const containerRect = document.getElementById('gameArea').getBoundingClientRect();
+
+            const x1 = rect1.right - containerRect.left;
+            const y1 = (rect1.top + rect1.height / 2) - containerRect.top;
+            const x2 = rect2.left - containerRect.left;
+            const y2 = (rect2.top + rect2.height / 2) - containerRect.top;
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x1);
+            line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2);
+            line.setAttribute('y2', y2);
+            line.setAttribute('stroke', '#27ae60');
+            line.setAttribute('stroke-width', '3');
+            canvas.appendChild(line);
+        }
+
+        function showSolution() {
+            connections = pairs.map(p => p.id.toString());
+            document.querySelectorAll('.item').forEach(i => {
+                i.classList.add('matched');
+                i.classList.remove('selected');
+            });
+            drawAllLines();
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
