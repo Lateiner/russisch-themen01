@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch: Endungs-Puzzle</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f0f3f5;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--primary-color);
+        }
+
+        h1 { font-size: 1.5rem; text-align: center; margin-bottom: 10px; }
+        .instructions { color: #666; text-align: center; margin-bottom: 20px; max-width: 500px; }
+
+        .quiz-container {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .sentence-box {
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+            min-height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .stem { font-weight: bold; }
+        .gap { 
+            color: var(--accent-color); 
+            border-bottom: 3px dashed var(--accent-color);
+            min-width: 40px;
+            display: inline-block;
+        }
+
+        /* Puzzle-Teile (Kacheln) */
+        .tiles-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .tile {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            padding: 15px 5px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .tile:hover { border-color: var(--accent-color); background: #ebf5fb; }
+        .tile.correct { background: var(--success-color); color: white; border-color: var(--success-color); }
+        .tile.wrong { background: var(--error-color); color: white; border-color: var(--error-color); }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--success-color);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        .btn-restart { background: #95a5a6; color: white; }
+        .btn-solve { background: var(--accent-color); color: white; }
+
+        #feedback-text {
+            height: 24px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>Thema 1: Endungs-Puzzle</h1>
+    <p class="instructions">Wähle das richtige Puzzle-Teil aus, um das Wort zu vervollständigen.</p>
+
+    <div class="quiz-container">
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+        
+        <div id="game-view">
+            <div class="sentence-box">
+                <span id="sentence-start"></span>
+                <span class="stem" id="word-stem"></span>
+                <span class="gap" id="word-gap">?</span>
+            </div>
+
+            <div class="tiles-container" id="tiles">
+                <!-- Kacheln werden hier geladen -->
+            </div>
+
+            <div id="feedback-text"></div>
+        </div>
+
+        <div id="finish-view" class="hidden">
+            <h2 style="color: var(--success-color)">🎉 Puzzle gelöst!</h2>
+            <p>Du beherrschst die Endungen der Selbstvorstellung.</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn-restart" onclick="initGame()">Neu starten</button>
+            <button class="btn-solve" id="solve-btn" onclick="showCurrentSolution()">Lösung zeigen</button>
+        </div>
+    </div>
+
+    <script>
+        const puzzleData = [
+            { start: 'Я работаю преподавател', stem: '', correct: 'ем', decoys: ['ом', 'а'], info: 'Instrumental (Beruf)' },
+            { start: 'Я увлекаюсь йог', stem: '', correct: 'ой', decoys: ['а', 'у'], info: 'Instrumental (Hobby)' },
+            { start: 'Я живу в Москв', stem: '', correct: 'е', decoys: ['у', 'ы'], info: 'Präpositional (Ort)' },
+            { start: 'Я родилась в Росси', stem: '', correct: 'и', decoys: ['я', 'ю'], info: 'Präpositional (Ort)' },
+            { start: 'Мне 25 л', stem: '', correct: 'ет', decoys: ['а', 'ов'], info: 'Genitiv Plural (Alter)' },
+            { start: 'Ему 2 год', stem: '', correct: 'а', decoys: ['ы', 'лет'], info: 'Genitiv Singular (Alter)' },
+            { start: 'Я посетила много стра', stem: '', correct: 'н', decoys: ['ны', 'нам'], info: 'Genitiv Plural' },
+            { start: 'Говорю по-английск', stem: '', correct: 'и', decoys: ['ий', 'ом'], info: 'Adverb' }
+        ];
+
+        let currentIndex = 0;
+        let canClick = true;
+
+        function initGame() {
+            currentIndex = 0;
+            canClick = true;
+            puzzleData.sort(() => Math.random() - 0.5);
+            document.getElementById('game-view').classList.remove('hidden');
+            document.getElementById('finish-view').classList.add('hidden');
+            document.getElementById('solve-btn').classList.remove('hidden');
+            showQuestion();
+            updateProgress();
+        }
+
+        function showQuestion() {
+            const current = puzzleData[currentIndex];
+            document.getElementById('sentence-start').innerText = current.start;
+            document.getElementById('word-gap').innerText = '?';
+            document.getElementById('feedback-text').innerText = '';
+            
+            const tilesContainer = document.getElementById('tiles');
+            tilesContainer.innerHTML = '';
+
+            const allOptions = [current.correct, ...current.decoys].sort(() => Math.random() - 0.5);
+
+            allOptions.forEach(opt => {
+                const btn = document.createElement('div');
+                btn.className = 'tile';
+                btn.innerText = '-' + opt;
+                btn.onclick = () => checkAnswer(opt, btn);
+                tilesContainer.appendChild(btn);
+            });
+            canClick = true;
+        }
+
+        function checkAnswer(selected, element) {
+            if (!canClick) return;
+            const current = puzzleData[currentIndex];
+            
+            if (selected === current.correct) {
+                canClick = false;
+                element.classList.add('correct');
+                document.getElementById('word-gap').innerText = current.correct;
+                document.getElementById('feedback-text').innerText = 'Richtig! (' + current.info + ')';
+                document.getElementById('feedback-text').style.color = 'var(--success-color)';
+                
+                setTimeout(() => {
+                    currentIndex++;
+                    if (currentIndex < puzzleData.length) {
+                        showQuestion();
+                        updateProgress();
+                    } else {
+                        finishGame();
+                    }
+                }, 1500);
+            } else {
+                element.classList.add('wrong');
+                document.getElementById('feedback-text').innerText = 'Versuch es noch einmal!';
+                document.getElementById('feedback-text').style.color = 'var(--error-color)';
+                setTimeout(() => element.classList.remove('wrong'), 800);
+            }
+        }
+
+        function showCurrentSolution() {
+            if (!canClick) return;
+            const current = puzzleData[currentIndex];
+            const tiles = document.querySelectorAll('.tile');
+            tiles.forEach(t => {
+                if (t.innerText === '-' + current.correct) {
+                    checkAnswer(current.correct, t);
+                }
+            });
+        }
+
+        function updateProgress() {
+            const progress = (currentIndex / puzzleData.length) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+        }
+
+        function finishGame() {
+            document.getElementById('game-view').classList.add('hidden');
+            document.getElementById('finish-view').classList.remove('hidden');
+            document.getElementById('solve-btn').classList.add('hidden');
+            document.getElementById('progress-fill').style.width = '100%';
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
