@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch: Satz-Baukasten</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f8f9fa;
+            --correct-bg: #ccffcc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--primary-color);
+        }
+
+        h1 { font-size: 1.5rem; text-align: center; margin-bottom: 5px; }
+        .instructions { color: #666; text-align: center; margin-bottom: 25px; max-width: 600px; }
+
+        .game-container {
+            width: 100%;
+            max-width: 700px;
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        /* Bereich für den fertigen Satz */
+        .sentence-area {
+            min-height: 100px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-content: flex-start;
+            background: #fff;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+
+        .sentence-area.correct { background-color: var(--correct-bg); border-color: var(--success-color); }
+        .sentence-area.wrong { background-color: #ffe6e6; border-color: var(--error-color); }
+
+        /* Wort-Pool */
+        .word-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            padding: 15px;
+            background: #f1f3f5;
+            border-radius: 12px;
+            min-height: 80px;
+        }
+
+        .word-chip {
+            background: white;
+            border: 2px solid var(--accent-color);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .word-chip:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .word-chip.used { opacity: 0.3; cursor: default; transform: none; }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 25px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-check { background-color: var(--success-color); color: white; }
+        .btn-solution { background-color: var(--accent-color); color: white; }
+        .btn-reset { background-color: #95a5a6; color: white; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        #feedback {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+            min-height: 24px;
+        }
+
+        .progress { margin-bottom: 15px; font-weight: bold; color: var(--accent-color); }
+
+        @media (max-width: 480px) {
+            .word-chip { padding: 6px 12px; font-size: 0.9rem; }
+            .sentence-area { min-height: 80px; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Thema 1: Satz-Baukasten</h1>
+    <p class="instructions">Bilde einen korrekten Satz, indem du die Wörter in der richtigen Reihenfolge anklickst.</p>
+
+    <div class="game-container">
+        <div class="progress" id="progress">Satz 1 / 5</div>
+        
+        <div class="sentence-area" id="targetArea">
+            <!-- Hier landen die angeklickten Wörter -->
+        </div>
+
+        <div class="word-pool" id="sourcePool">
+            <!-- Hier liegen die gemischten Wörter -->
+        </div>
+
+        <div id="feedback"></div>
+
+        <div class="controls">
+            <button class="btn-check" id="checkBtn" onclick="checkSentence()">Prüfen</button>
+            <button class="btn-solution" onclick="showSolution()">Lösung anzeigen</button>
+            <button class="btn-reset" onclick="resetCurrentSentence()">Satz leeren</button>
+            <button class="btn-reset" style="background: #34495e" onclick="initGame()">Neu starten</button>
+        </div>
+    </div>
+
+    <script>
+        const sentences = [
+            ["Меня", "зовут", "Ирина", "Петровна", "."],
+            ["Я", "родилась", "в", "маленьком", "городе", "."],
+            ["Сейчас", "я", "живу", "в", "Москве", "."],
+            ["Я", "работаю", "преподавателем", "русского", "языка", "."],
+            ["Я", "очень", "люблю", "путешествовать", "."],
+            ["У", "меня", "есть", "собака", "Вольт", "."],
+            ["В", "свободное", "время", "я", "читаю", "."],
+            ["Я", "хорошо", "говорю", "по-английски", "."],
+            ["Я", "мечтаю", "много", "путешествовать", "."],
+            ["Русский", "язык", "—", "мой", "родной", "язык", "."]
+        ];
+
+        let currentLevel = 0;
+        let userSentence = [];
+        let isCorrect = false;
+
+        function initGame() {
+            currentLevel = 0;
+            loadLevel();
+        }
+
+        function loadLevel() {
+            userSentence = [];
+            isCorrect = false;
+            document.getElementById('feedback').innerText = "";
+            document.getElementById('targetArea').className = "sentence-area";
+            document.getElementById('checkBtn').disabled = false;
+            document.getElementById('progress').innerText = `Satz ${currentLevel + 1} / ${sentences.length}`;
+            
+            const targetArea = document.getElementById('targetArea');
+            targetArea.innerHTML = "";
+
+            const sourcePool = document.getElementById('sourcePool');
+            sourcePool.innerHTML = "";
+
+            // Wörter mischen
+            const shuffled = [...sentences[currentLevel]].sort(() => Math.random() - 0.5);
+
+            shuffled.forEach((word, index) => {
+                const chip = document.createElement('div');
+                chip.className = 'word-chip';
+                chip.innerText = word;
+                chip.onclick = () => addWord(word, chip);
+                sourcePool.appendChild(chip);
+            });
+        }
+
+        function addWord(word, chipElement) {
+            if (chipElement.classList.contains('used') || isCorrect) return;
+
+            userSentence.push(word);
+            chipElement.classList.add('used');
+
+            const targetArea = document.getElementById('targetArea');
+            const newChip = document.createElement('div');
+            newChip.className = 'word-chip';
+            newChip.innerText = word;
+            // Klick im Zielbereich entfernt das Wort wieder
+            newChip.onclick = () => removeWord(word, newChip, chipElement);
+            targetArea.appendChild(newChip);
+        }
+
+        function removeWord(word, targetChip, originalChip) {
+            if (isCorrect) return;
+            const index = userSentence.indexOf(word);
+            if (index > -1) {
+                userSentence.splice(index, 1);
+            }
+            targetChip.remove();
+            originalChip.classList.remove('used');
+            document.getElementById('targetArea').className = "sentence-area";
+        }
+
+        function checkSentence() {
+            const correct = sentences[currentLevel].join(" ");
+            const user = userSentence.join(" ");
+
+            const targetArea = document.getElementById('targetArea');
+
+            if (user === correct) {
+                targetArea.className = "sentence-area correct";
+                document.getElementById('feedback').innerText = "Richtig! ✅";
+                document.getElementById('feedback').style.color = "var(--success-color)";
+                isCorrect = true;
+                document.getElementById('checkBtn').disabled = true;
+
+                if (currentLevel < sentences.length - 1) {
+                    setTimeout(() => {
+                        currentLevel++;
+                        loadLevel();
+                    }, 2000);
+                } else {
+                    document.getElementById('feedback').innerText = "🎉 Wahnsinn! Du hast alle Sätze gebaut.";
+                }
+            } else {
+                targetArea.className = "sentence-area wrong";
+                document.getElementById('feedback').innerText = "Noch nicht ganz richtig. Versuche es erneut!";
+                document.getElementById('feedback').style.color = "var(--error-color)";
+            }
+        }
+
+        function showSolution() {
+            resetCurrentSentence();
+            const correctArr = sentences[currentLevel];
+            correctArr.forEach(word => {
+                // Finde den entsprechenden Chip im Pool, der noch nicht "used" ist
+                const chips = document.querySelectorAll('#sourcePool .word-chip');
+                for (let chip of chips) {
+                    if (chip.innerText === word && !chip.classList.contains('used')) {
+                        addWord(word, chip);
+                        break;
+                    }
+                }
+            });
+            checkSentence();
+        }
+
+        function resetCurrentSentence() {
+            if (isCorrect) return;
+            userSentence = [];
+            document.getElementById('targetArea').innerHTML = "";
+            document.querySelectorAll('.word-chip').forEach(c => c.classList.remove('used'));
+            document.getElementById('targetArea').className = "sentence-area";
+            document.getElementById('feedback').innerText = "";
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
