@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Lernmodul: Memory (Pro)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --bg-color: #f8f9fa;
+            --card-back: #34495e;
+            --card-front: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1 { color: var(--primary-color); margin-bottom: 5px; font-size: 1.8rem; text-align: center; }
+        .instructions { color: #666; margin-bottom: 20px; text-align: center; }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            width: 100%;
+            max-width: 600px;
+            perspective: 1000px;
+        }
+
+        @media (max-width: 480px) {
+            .game-container { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        }
+
+        .card {
+            aspect-ratio: 1 / 1;
+            cursor: pointer;
+            position: relative;
+            transition: opacity 0.5s ease-out, transform 0.3s;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card.flipped .card-inner { transform: rotateY(180deg); }
+
+        /* Wenn ein Paar gefunden wurde */
+        .card.matched {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.8);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            padding: 10px;
+            box-sizing: border-box;
+            font-weight: 600;
+            font-size: clamp(0.8rem, 2.5vw, 1rem);
+        }
+
+        .card-back {
+            background-color: var(--card-back);
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .card-front {
+            background-color: var(--card-front);
+            color: var(--primary-color);
+            transform: rotateY(180deg);
+            border: 3px solid transparent;
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+
+        .btn-restart { background-color: var(--accent-color); color: white; }
+        .btn-solution { background-color: #95a5a6; color: white; }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+        button:active { transform: translateY(0); }
+
+        #message {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #27ae60;
+            min-height: 24px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Thema 1: О себе</h1>
+    <p class="instructions">Finde die Paare. Gefundene Paare verschwinden vom Feld.</p>
+
+    <div class="game-container" id="gameBoard"></div>
+
+    <div id="message"></div>
+
+    <div class="controls">
+        <button class="btn-restart" onclick="resetGame()">Neu starten</button>
+        <button class="btn-solution" onclick="showSolution()">Lösung anzeigen</button>
+    </div>
+
+    <script>
+        const pairs = [
+            { ru: 'имя', de: 'Vorname', color: '#FFADAD' },
+            { ru: 'фамилия', de: 'Nachname', color: '#FFD6A5' },
+            { ru: 'возраст', de: 'Alter', color: '#FDFFB6' },
+            { ru: 'работа', de: 'Arbeit', color: '#CAFFBF' },
+            { ru: 'хобби', de: 'Hobby', color: '#9BF6FF' },
+            { ru: 'мечта', de: 'Traum', color: '#A0C4FF' },
+            { ru: 'страна', de: 'Land', color: '#BDB2FF' },
+            { ru: 'язык', de: 'Sprache', color: '#FFC6FF' }
+        ];
+
+        let flippedCards = [];
+        let matchedCount = 0;
+        let canClick = true;
+
+        function createBoard() {
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.innerHTML = '';
+            matchedCount = 0;
+            document.getElementById('message').innerText = '';
+            
+            let deck = [];
+            pairs.forEach((pair, index) => {
+                deck.push({ text: pair.ru, matchId: index, color: pair.color });
+                deck.push({ text: pair.de, matchId: index, color: pair.color });
+            });
+            
+            deck.sort(() => Math.random() - 0.5);
+
+            deck.forEach((item) => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.matchId = item.matchId;
+                card.dataset.pairColor = item.color;
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-back">?</div>
+                        <div class="card-front" style="border-color: ${item.color}">${item.text}</div>
+                    </div>
+                `;
+                card.addEventListener('click', () => flipCard(card));
+                gameBoard.appendChild(card);
+            });
+            canClick = true;
+        }
+
+        function flipCard(card) {
+            if (!canClick || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+            card.classList.add('flipped');
+            flippedCards.push(card);
+
+            if (flippedCards.length === 2) {
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            canClick = false;
+            const [card1, card2] = flippedCards;
+            const isMatch = card1.dataset.matchId === card2.dataset.matchId;
+
+            if (isMatch) {
+                matchedCount++;
+                // Farbe des Paares kurz hervorheben
+                const color = card1.dataset.pairColor;
+                card1.querySelector('.card-front').style.backgroundColor = color;
+                card2.querySelector('.card-front').style.backgroundColor = color;
+
+                setTimeout(() => {
+                    card1.classList.add('matched');
+                    card2.classList.add('matched');
+                    flippedCards = [];
+                    canClick = true;
+                    if (matchedCount === pairs.length) {
+                        document.getElementById('message').innerText = '🎉 Super! Du hast alle Begriffe gefunden.';
+                    }
+                }, 800);
+            } else {
+                setTimeout(() => {
+                    card1.classList.remove('flipped');
+                    card2.classList.remove('flipped');
+                    flippedCards = [];
+                    canClick = true;
+                }, 1000);
+            }
+        }
+
+        function showSolution() {
+            canClick = false;
+            const allCards = document.querySelectorAll('.card');
+            allCards.forEach(card => {
+                const color = card.dataset.pairColor;
+                card.classList.add('flipped');
+                card.querySelector('.card-front').style.backgroundColor = color;
+                // Verhindert das Verschwinden beim Anzeigen der Lösung
+                card.classList.remove('matched');
+                card.style.opacity = "1"; 
+            });
+            document.getElementById('message').innerText = 'Lösung wird angezeigt.';
+        }
+
+        function resetGame() {
+            createBoard();
+        }
+
+        createBoard();
+    </script>
+</body>
+</html>
