@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch: Genus-Check</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --male-color: #3498db;
+            --female-color: #e91e63;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --bg-color: #f0f2f5;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--primary-color);
+        }
+
+        h1 { font-size: 1.6rem; text-align: center; margin-bottom: 10px; }
+        .instructions { color: #666; text-align: center; margin-bottom: 30px; max-width: 500px; }
+
+        .game-card {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        #sentence-display {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 40px;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.4;
+        }
+
+        .choice-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .choice-btn {
+            border: 3px solid #eee;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            user-select: none;
+        }
+
+        .choice-btn:hover { border-color: var(--primary-color); background: #f8f9fa; }
+        .choice-btn.male { color: var(--male-color); }
+        .choice-btn.female { color: var(--female-color); }
+
+        .choice-btn .icon { font-size: 2.5rem; }
+        .choice-btn .label { font-weight: bold; font-size: 1.2rem; }
+
+        .correct { border-color: var(--success-color) !important; background: #e8f5e9 !important; }
+        .wrong { border-color: var(--error-color) !important; background: #ffebee !important; }
+
+        .progress-bar {
+            width: 100%;
+            max-width: 500px;
+            height: 10px;
+            background: #ddd;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            height: 100%;
+            background: var(--success-color);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        .controls { margin-top: 30px; }
+
+        button.nav-btn {
+            padding: 12px 30px;
+            border-radius: 8px;
+            border: none;
+            background: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+        }
+
+        button.nav-btn:hover { opacity: 0.9; }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 400px) {
+            #sentence-display { font-size: 1.1rem; }
+            .choice-btn .icon { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Thema 1: Genus-Check (он или она?)</h1>
+    <p class="instructions">Achte auf die Verb-Endung im Präteritum. Wer spricht hier?</p>
+
+    <div class="progress-bar">
+        <div id="progress-fill"></div>
+    </div>
+
+    <div class="game-card">
+        <div id="sentence-display">Wird geladen...</div>
+
+        <div class="choice-container" id="choices">
+            <div class="choice-btn male" onclick="checkAnswer('male')">
+                <span class="icon">👨</span>
+                <span class="label">он</span>
+            </div>
+            <div class="choice-btn female" onclick="checkAnswer('female')">
+                <span class="icon">👩</span>
+                <span class="label">она</span>
+            </div>
+        </div>
+
+        <div id="feedback" style="margin-top: 20px; font-weight: bold; min-height: 24px;"></div>
+    </div>
+
+    <div class="controls">
+        <button class="nav-btn" onclick="initGame()">Neu starten</button>
+    </div>
+
+    <script>
+        const quizData = [
+            { s: 'Я родился в России.', g: 'male' },
+            { s: 'Я родилась в России.', g: 'female' },
+            { s: 'Я учился в школе.', g: 'male' },
+            { s: 'Я училась в школе.', g: 'female' },
+            { s: 'Я переехала в Москву.', g: 'female' },
+            { s: 'Я посетил много стран.', g: 'male' },
+            { s: 'Я посетила Италию.', g: 'female' },
+            { s: 'Я изучала английский язык.', g: 'female' },
+            { s: 'Я начал изучать русский.', g: 'male' },
+            { s: 'Я начала делать видео.', g: 'female' },
+            { s: 'Я мало занимался чешским.', g: 'male' },
+            { s: 'Я сделала этот канал.', g: 'female' }
+        ];
+
+        let currentIndex = 0;
+        let canClick = true;
+
+        // Vollständiger Reset des Spiels
+        function initGame() {
+            // 1. Logik zurücksetzen
+            currentIndex = 0;
+            canClick = true;
+            
+            // 2. Quiz-Daten neu mischen
+            quizData.sort(() => Math.random() - 0.5);
+            
+            // 3. UI-Elemente wiederherstellen
+            document.getElementById('choices').classList.remove('hidden');
+            document.getElementById('feedback').innerText = '';
+            document.getElementById('progress-fill').style.width = '0%';
+            
+            // 4. Ersten Satz anzeigen
+            showSentence();
+        }
+
+        function showSentence() {
+            const display = document.getElementById('sentence-display');
+            display.innerText = quizData[currentIndex].s;
+            
+            // Farben der Buttons zurücksetzen
+            document.querySelectorAll('.choice-btn').forEach(btn => {
+                btn.classList.remove('correct', 'wrong');
+            });
+            document.getElementById('feedback').innerText = '';
+            canClick = true;
+        }
+
+        function checkAnswer(choice) {
+            if (!canClick) return;
+            canClick = false;
+
+            const correctGender = quizData[currentIndex].g;
+            const feedback = document.getElementById('feedback');
+            const maleBtn = document.querySelector('.choice-btn.male');
+            const femaleBtn = document.querySelector('.choice-btn.female');
+
+            if (choice === correctGender) {
+                feedback.innerText = 'Richtig! ✅';
+                feedback.style.color = 'var(--success-color)';
+                document.querySelector(`.choice-btn.${choice}`).classList.add('correct');
+                
+                // Verzögerung vor dem nächsten Satz
+                setTimeout(() => {
+                    currentIndex++;
+                    updateProgress();
+                    if (currentIndex < quizData.length) {
+                        showSentence();
+                    } else {
+                        finishGame();
+                    }
+                }, 1000);
+            } else {
+                feedback.innerText = 'Leider falsch. ❌ Achte auf die Endung!';
+                feedback.style.color = 'var(--error-color)';
+                document.querySelector(`.choice-btn.${choice}`).classList.add('wrong');
+                
+                // Kurze Sperre, damit der Schüler den Fehler sieht, dann darf er korrigieren
+                setTimeout(() => {
+                    document.querySelector(`.choice-btn.${choice}`).classList.remove('wrong');
+                    canClick = true;
+                }, 1000);
+            }
+        }
+
+        function updateProgress() {
+            const progress = (currentIndex / quizData.length) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+        }
+
+        function finishGame() {
+            const display = document.getElementById('sentence-display');
+            display.innerHTML = "🎉 Super!<br>Du hast alle Sätze richtig zugeordnet.";
+            document.getElementById('choices').classList.add('hidden');
+            document.getElementById('feedback').innerText = '';
+            document.getElementById('progress-fill').style.width = '100%';
+        }
+
+        // Initialer Start beim Laden der Seite
+        window.onload = initGame;
+    </script>
+</body>
+</html>
